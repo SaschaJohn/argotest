@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd-helms-tooling-stage
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  generators:
+  - git:
+      repoURL: https://danfoss.visualstudio.com/Alsense/_git/alsense.infrastructure.deployment
+      revision: deployment
+      directories:
+      - path: helm/akhq
+      - path: helm/blackbox-exporter
+      - path: helm/kafka-exporter
+      - path: helm/node-exporter
+#      - path: helm/postgres-exporter
+      - path: helm/kube-state-metrics
+      - path: helm/promtail
+      - path: helm/pgadmin4
+      - path: helm/velero
+      - path: helm/loki
+      - path: helm/prometheus-operator
+      - path: helm/otel-operator           
+  template:
+    metadata:
+      name: '{{path.basename}}-{{path[0]}}-stage'
+    spec:
+      project: helm
+      source:
+        repoURL: https://danfoss.visualstudio.com/Alsense/_git/alsense.infrastructure.deployment
+        targetRevision: deployment
+        path: '{{path}}'
+        helm:
+          valueFiles:
+          - values-stage.yaml
+      destination:
+        server: https://ecs-dis-pd-ue-aks-02-dns-65d9ecf0.hcp.eastus.azmk8s.io:443
+        namespace: tooling      
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=orphan
+        - Replace=true
